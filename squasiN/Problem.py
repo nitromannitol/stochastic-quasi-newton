@@ -27,8 +27,6 @@ class Problem():
 		x_av_j = x
 		x_av_i = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.inputSize))))
 
-		#average gradient 
-		g_av = 0
 
 		#initialize curvature pairs 
 		s_t = 0
