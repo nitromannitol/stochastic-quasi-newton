@@ -39,7 +39,7 @@ def binaryClassObjectiveStochasticGradient(w, batchSize):
 		z = Z[i]
 		cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
 		grad = grad + (cwx - z)*(x)
-	return grad
+	return grad/batchSize
 
 def binaryClassObjectiveHessianVectorProduct(w,s, batchSize):
 	size = X.shape
@@ -51,7 +51,7 @@ def binaryClassObjectiveHessianVectorProduct(w,s, batchSize):
 		x = numpy.transpose(numpy.matrix((X[i,:])))
 		cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
 		output = output + cwx*(1-cwx)*(numpy.transpose(x)*s).item()*x
-	return output
+	return output/batchSize
 
 
 def test_expressions():
