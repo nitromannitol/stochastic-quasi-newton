@@ -37,7 +37,7 @@ def logisticGradient(w, dataSample):
 	if(z < -600):
 		z = -600
 	sigmoid = 1/(1 + math.exp(-z))
-	return-((label-sigmoid))*x
+	return((label-sigmoid))*x
 
 #the logistic hessian vector of one data sample and vector s
 def logisticHessianVec(w,dataSample,s):
@@ -72,10 +72,6 @@ def logisticError(x_opt,data):
 			pred = 0
 		if(pred != label):
 			numWrong+=1 
-		#if(pred == 1):
-		#	print('-----')
-		#if(pred == 0):
-		#	print('o')
 	return (float(numWrong)/float(numSamples))*100
 
 def test_expressions():
@@ -90,8 +86,6 @@ def test_problems():
 	data = numpy.fliplr(numpy.matrix(numpy.loadtxt('spam.data')))
 	numFeatures = data.shape[1] -1
 	numSamples = data.shape[0]
-
-
 
 
 	numDesiredSamples = 10000
@@ -112,7 +106,7 @@ def test_problems():
 	y = numpy.ravel(numpy.array(data[:,0]))
 	X = data
 	X = numpy.array(numpy.delete(X,0,axis = 1))
-	clf = SGDClassifier(loss="log", penalty="l2")
+	clf = SGDClassifier(loss="log", penalty="l2", shuffle = True, warm_start = True, verbose = 1)
 	clf.fit(X,y)
 	error = sum(y - clf.predict(X))/len(y)
 
@@ -124,14 +118,14 @@ def test_problems():
 	#Run our implementation of stochastic gradient descent
 	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data, numFeatures)
 	prob = Problem(exp, constraints = [])
-	[optval, x_opt] =  prob.sgsolve(verbose = False, K = 25, gradientBatchSize = 50)
-	print 'Error of SGD is ' +  str(logisticError(x_opt, data) )+ '%'
+	[optval, x_opt] =  prob.sgsolve(verbose = True, K = 2000, gradientBatchSize = 50)
+	print 'Error of SGD is ' +  str(logisticError(x_opt, data))+ '%'
 	#print optval, x_opt
 
 
 	#Run our implementation of stochastic quasi newton gradient descent
-	[optval, x_opt] =  prob.sqnsolve(verbose = False, K = 25, gradientBatchSize = 5, hessianBatchSize = 300)
-	print 'Error of SQN is ' +  str(logisticError(x_opt, data) )+ '%'
+	[optval, x_opt] =  prob.sqnsolve(verbose = True, K = 2000, gradientBatchSize = 5, hessianBatchSize = 300)
+	print 'Error of SQN is ' +  str(logisticError(x_opt, data))+ '%'
 	#print optval, x_opt
 
 

@@ -26,7 +26,7 @@ class Problem():
 
 
 		if x_0 is None:
-			x_0 =  2*numpy.transpose(numpy.matrix(numpy.ones((1,self.exp.paramSize))))
+			x_0 =  numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 		x = x_0
 		#average iterates
 		x_av_j = x
@@ -48,7 +48,7 @@ class Problem():
 		t = 0 #number of times the hessian has been updated
 
 		for k in xrange(K):
-			alpha = 7/(k+1)
+			alpha = 0.01/(k+1)
 
 			if(verbose is True):
 				iterationsVal[k] = self.exp.get_value(x)
@@ -104,17 +104,19 @@ class Problem():
 					rho[last] = 1/ys
 
 		if(verbose is True):
-			plt.plot(iterationsVal)
+			plt.plot(iterationsVal, label = "Stochastic Quasi-Newton")
 			plt.xlabel('Iterations')
 			plt.ylabel('Objective Value')
+			plt.legend(loc='lower right')
 			plt.show()
+
 
 		return (self.exp.get_value(x), x)
 
 
 	#basic non-robust implementation of stochastic gradient descent
 	def sgsolve(self, K = 1000, gradientBatchSize = 50, verbose = False):
-		x = 2*numpy.transpose(numpy.matrix(numpy.ones((1,self.exp.paramSize))))
+		x = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 
 		iterationsVal = numpy.zeros(K)
 
@@ -124,7 +126,7 @@ class Problem():
 				iterationsVal[k] = self.exp.get_value(x)
 				print k, iterationsVal[k]
 
-			alpha = 1/(k+1)
+			alpha = 0.01/(k+1)
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
@@ -137,10 +139,10 @@ class Problem():
 			
 		
 		if(verbose is True):
-			plt.plot(iterationsVal)
+			plt.plot(iterationsVal, label = "Stochastic Gradient Descent")
 			plt.xlabel('Iterations')
 			plt.ylabel('Objective Value')
-			plt.show()
+			#plt.show()
 
 
 		return (self.exp.get_value(x), x)
