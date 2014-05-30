@@ -1,5 +1,6 @@
 import numpy 
 import scipy 
+import matplotlib.pyplot as plt
 #solves a given expression using stochastic quasi-newton 
 class Problem():
 	
@@ -15,12 +16,15 @@ class Problem():
 	#   M: size of the L-BFGS step computation
 	#	L : compute correction pairs every L iterations
 	#	K : number of iterations
-	#	alpha : just use 1/niter for now can be a stepsize sequence  
+	#	alpha : just use beta/niter for now can be a stepsize sequence  
 	#Outputs: final weights and optimum value 
 
-	def sqnsolve(self, x_0 =None, M = 20, L = 20, K = 1000, alpha = None, gradientBatchSize = 20, hessianBatchSize = 20):
+	def sqnsolve(self, x_0 =None, M = 10, L = 20, K = 1000, alpha = None, gradientBatchSize = 20, hessianBatchSize = 20, verbose = False):
 		continuity_correction = 1e-10
 	
+		iterationsVal = numpy.zeros(K)
+
+
 		if x_0 is None:
 			x_0 =  numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 		x = x_0
@@ -44,7 +48,12 @@ class Problem():
 		t = 0 #number of times the hessian has been updated
 
 		for k in xrange(K):
-			alpha = 1/(k+1)
+			alpha = 5/(k+1)
+
+			if(verbose is True):
+				iterationsVal[k] = self.exp.get_value(x)
+				print k, iterationsVal[k]
+
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
@@ -91,21 +100,41 @@ class Problem():
 					savedY[:,last] = y_t
 					rho[last] = 1/ys
 
+		if(verbose is True):
+			plt.plot(iterationsVal)
+			plt.xlabel('Iterations')
+			plt.ylabel('Objective Value')
+			plt.show()
+
 		return (self.exp.get_value(x), x)
 
 
 	#basic non-robust implementation of stochastic gradient descent
-	def sgsolve(self, K = 1000, gradientBatchSize = 10):
+	def sgsolve(self, K = 1000, gradientBatchSize = 10, verbose = False):
 		x = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
+		
+
+		iterationsVal = numpy.zeros(K)
+
 
 		for k in xrange(K):
-			alpha = 1/(k+1)
+			alpha = 2/(k+1)
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
 
 			#Perform step update
 			x = x-alpha*stochastic_grad
+
+			if(verbose is True):
+				iterationsVal[k] = self.exp.get_value(x)
+				print k, iterationsVal[k],numpy.linalg.norm(x), stochastic_grad
+		
+		if(verbose is True):
+			plt.plot(iterationsVal)
+			plt.xlabel('Iterations')
+			plt.ylabel('Objective Value')
+			plt.show()
 
 
 		return (self.exp.get_value(x), x)

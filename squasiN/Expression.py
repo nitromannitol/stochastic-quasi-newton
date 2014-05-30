@@ -21,7 +21,7 @@ class Expression():
 	def get_subgrad(self,w, batchSize):
 		grad = numpy.zeros((self.paramSize,1))
 		sampleIndicies = random.sample(range(1,self.numSamples),batchSize)
-		for i in xrange(batchSize):
+		for i in sampleIndicies:
 			dataSample = numpy.transpose(self.data[i,:])
 			grad = grad + self.subgradient(w,dataSample)
 		return grad/batchSize
@@ -29,7 +29,7 @@ class Expression():
 	def get_hesVec(self,w, batchSize, s):
 		sampleIndicies = random.sample(range(1,self.numSamples),batchSize)
 		output = numpy.zeros((self.paramSize,1))
-		for i in xrange(batchSize):
+		for i in sampleIndicies:
 			dataSample = numpy.transpose(self.data[i,:])
 			output = output + self.hesVec(w,dataSample, s)
 		return output/batchSize

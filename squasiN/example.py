@@ -40,16 +40,28 @@ def test_expressions():
 	print(exp.get_subgrad(w, 1))
 
 def test_problems():
-	#generate data
+	#generate synthetic data
 	numFeatures = 50
-	numSamples = 5000
-	Z = numpy.matrix([numpy.random.randint(0,1) for b in range(1,numSamples+1)])
-	X = numpy.matrix(numpy.random.random((numSamples,numFeatures)))
-	data = numpy.hstack([numpy.transpose(Z),X])
+	numSamples = 7000
+
+	mean0 = 0
+	mean1 = 10
+
+	Z0 = numpy.matrix([0 for b in range(1,numSamples/2 + 1)])
+	X0 = numpy.random.normal(loc = mean0, size = (numSamples/2, numFeatures))
+	data0 = numpy.hstack([numpy.transpose(Z0), X0])
+	Z1 = numpy.matrix([1 for b in range(1,numSamples/2 + 1)])
+	X1 = numpy.random.normal(loc = mean1, size = (numSamples/2, numFeatures))
+	data1 = numpy.hstack([numpy.transpose(Z1), X1])
+
+	data = numpy.vstack([data0,data1])
+
+
+
 	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data, numFeatures)
-	prob = Problem(exp)
-	print(prob.sgsolve())
-	print(prob.sqnsolve())
+	prob = Problem(exp, constraints = [])
+	print(prob.sgsolve(verbose = True, K = 100, gradientBatchSize = 50))
+	print(prob.sqnsolve(verbose = True, K = 100, gradientBatchSize = 50, hessianBatchSize = 300))
 
 
 if __name__ == "__main__":
