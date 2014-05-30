@@ -1,6 +1,7 @@
 import numpy 
 import scipy 
 import matplotlib.pyplot as plt
+import time
 #solves a given expression using stochastic quasi-newton 
 class Problem():
 	
@@ -23,7 +24,7 @@ class Problem():
 		continuity_correction = 1e-10
 	
 		iterationsVal = numpy.zeros(K)
-
+		averageTime = 0
 
 		if x_0 is None:
 			x_0 =  numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
@@ -50,10 +51,13 @@ class Problem():
 		for k in xrange(K):
 			alpha = 0.01/(k+1)
 
+
 			if(verbose is True):
 				iterationsVal[k] = self.exp.get_value(x)
 				print k, iterationsVal[k]
 
+
+			start = time.clock()
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
@@ -102,13 +106,19 @@ class Problem():
 					savedS[:,last] = s_t
 					savedY[:,last] = y_t
 					rho[last] = 1/ys
+			end = time.clock() 
+			averageTime+= end - start
+
+		averageTime/=K
 
 		if(verbose is True):
-			plt.plot(iterationsVal, label = "Stochastic Quasi-Newton")
+			plt.plot(iterationsVal, label = "Stochastic Quasi-Newton, L = " + str(L))
 			plt.xlabel('Iterations')
 			plt.ylabel('Objective Value')
 			plt.legend(loc='lower right')
-			plt.show()
+			if(L == 85):
+				plt.show()
+			print averageTime
 
 
 		return (self.exp.get_value(x), x)
@@ -119,13 +129,17 @@ class Problem():
 		x = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 
 		iterationsVal = numpy.zeros(K)
+		averageTime = 0
 
 
-		for k in xrange(K):
+		for k in xrange(K):	
+
 			if(verbose is True):
 				iterationsVal[k] = self.exp.get_value(x)
 				print k, iterationsVal[k]
 
+
+			start = time.clock()
 			alpha = 0.01/(k+1)
 
 			#Calculate stochastic gradient
@@ -134,7 +148,11 @@ class Problem():
 
 			#Perform step update
 			x = x-alpha*stochastic_grad
+			end = time.clock()
 
+			averageTime+= end - start
+
+		averageTime/=K
 
 			
 		
@@ -142,6 +160,7 @@ class Problem():
 			plt.plot(iterationsVal, label = "Stochastic Gradient Descent")
 			plt.xlabel('Iterations')
 			plt.ylabel('Objective Value')
+			print(averageTime)
 			#plt.show()
 
 

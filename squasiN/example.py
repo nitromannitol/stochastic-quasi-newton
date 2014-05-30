@@ -93,7 +93,7 @@ def test_problems():
 
 	dataLarge = numpy.zeros((numSamples, numFeatures+1))
 
-	numpy.random.seed(42)
+	numpy.random.seed(55)
 	for i in xrange(numSamples):
 		choice = choices[i]
 		dataLarge[i,:] = data[choice,:]
@@ -118,15 +118,18 @@ def test_problems():
 	#Run our implementation of stochastic gradient descent
 	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data, numFeatures)
 	prob = Problem(exp, constraints = [])
-	[optval, x_opt] =  prob.sgsolve(verbose = True, K = 2000, gradientBatchSize = 50)
+	[optval, x_opt] =  prob.sgsolve(verbose = True, K = 300, gradientBatchSize = 50)
 	print 'Error of SGD is ' +  str(logisticError(x_opt, data))+ '%'
 	#print optval, x_opt
 
 
-	#Run our implementation of stochastic quasi newton gradient descent
-	[optval, x_opt] =  prob.sqnsolve(verbose = True, K = 2000, gradientBatchSize = 5, hessianBatchSize = 300)
-	print 'Error of SQN is ' +  str(logisticError(x_opt, data))+ '%'
-	#print optval, x_opt
+	Ls = (1,50, 85)
+
+	for Lval in Ls:
+		#Run our implementation of stochastic quasi newton gradient descent
+		[optval, x_opt] =  prob.sqnsolve(verbose = True, K = 300, gradientBatchSize = 10, hessianBatchSize = 300, L = Lval)
+		print 'Error of SQN is ' +  str(logisticError(x_opt, data))+ '%'
+		#print optval, x_opt
 
 
 
