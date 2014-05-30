@@ -92,17 +92,6 @@ def test_problems():
 	numSamples = data.shape[0]
 
 
-	#test on skilearn stochastic gradient descent
-	y = numpy.ravel(numpy.array(data[:,0]))
-	X = data
-	X = numpy.array(numpy.delete(X,0,axis = 1))
-	clf = SGDClassifier(loss="log", penalty="l2")
-	clf.fit(X,y)
-	error = sum(y - clf.predict(X))/len(y)
-
-	p = numpy.transpose(numpy.matrix(clf.coef_))
-	print 'Error of SKILearn SGD is ' +  str(logisticError(p, data) )+ '%'
-
 
 
 	numDesiredSamples = 10000
@@ -119,8 +108,20 @@ def test_problems():
 
 
 	
+	#test on skilearn stochastic gradient descent
+	y = numpy.ravel(numpy.array(data[:,0]))
+	X = data
+	X = numpy.array(numpy.delete(X,0,axis = 1))
+	clf = SGDClassifier(loss="log", penalty="l2")
+	clf.fit(X,y)
+	error = sum(y - clf.predict(X))/len(y)
+
+	p = numpy.transpose(numpy.matrix(clf.coef_))
+	print 'Error of SKILearn SGD is ' +  str(logisticError(p, data) )+ '%'
 
 
+
+	#Run our implementation of stochastic gradient descent
 	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data, numFeatures)
 	prob = Problem(exp, constraints = [])
 	[optval, x_opt] =  prob.sgsolve(verbose = False, K = 25, gradientBatchSize = 50)
@@ -128,6 +129,7 @@ def test_problems():
 	#print optval, x_opt
 
 
+	#Run our implementation of stochastic quasi newton gradient descent
 	[optval, x_opt] =  prob.sqnsolve(verbose = False, K = 25, gradientBatchSize = 5, hessianBatchSize = 300)
 	print 'Error of SQN is ' +  str(logisticError(x_opt, data) )+ '%'
 	#print optval, x_opt
