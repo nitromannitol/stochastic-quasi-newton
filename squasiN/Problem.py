@@ -19,14 +19,14 @@ class Problem():
 	#	alpha : just use beta/niter for now can be a stepsize sequence  
 	#Outputs: final weights and optimum value 
 
-	def sqnsolve(self, x_0 =None, M = 10, L = 20, K = 1000, alpha = None, gradientBatchSize = 20, hessianBatchSize = 20, verbose = False):
+	def sqnsolve(self, x_0 =None, M = 10, L = 20, K = 1000, alpha = None, gradientBatchSize = 5, hessianBatchSize = 300, verbose = False):
 		continuity_correction = 1e-10
 	
 		iterationsVal = numpy.zeros(K)
 
 
 		if x_0 is None:
-			x_0 =  numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
+			x_0 =  2*numpy.transpose(numpy.matrix(numpy.ones((1,self.exp.paramSize))))
 		x = x_0
 		#average iterates
 		x_av_j = x
@@ -48,7 +48,7 @@ class Problem():
 		t = 0 #number of times the hessian has been updated
 
 		for k in xrange(K):
-			alpha = 5/(k+1)
+			alpha = 7/(k+1)
 
 			if(verbose is True):
 				iterationsVal[k] = self.exp.get_value(x)
@@ -62,9 +62,11 @@ class Problem():
 			x_av_i = x_av_i + x
 
 			if k < 2*L:
+				#print 'SGD ITERATION!'
 				#stochastic gradient iteration 
 				x = x - alpha*stochastic_grad
 			else:
+				#print 'SQN ITERATION!'
 				#L-BFGS step computation with memory M 
 				stepDirection = stochastic_grad
 				#compute uphill direction as follows
@@ -83,7 +85,8 @@ class Problem():
 				#update x with the step direction 
 				x = x - alpha*stepDirection
 
-			if k%L == 0:				
+			if k%L == 0:
+				#print 'Hessian being updated',t				
 				t = t +1
 				x_av_i = x_av_i/L
 				#compute new curvature pairs 
@@ -110,25 +113,28 @@ class Problem():
 
 
 	#basic non-robust implementation of stochastic gradient descent
-	def sgsolve(self, K = 1000, gradientBatchSize = 10, verbose = False):
-		x = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
-		
+	def sgsolve(self, K = 1000, gradientBatchSize = 50, verbose = False):
+		x = 2*numpy.transpose(numpy.matrix(numpy.ones((1,self.exp.paramSize))))
 
 		iterationsVal = numpy.zeros(K)
 
 
 		for k in xrange(K):
-			alpha = 4/(k+1)
+			if(verbose is True):
+				iterationsVal[k] = self.exp.get_value(x)
+				print k, iterationsVal[k]
+
+			alpha = 1/(k+1)
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
+			#print stochastic_grad
 
 			#Perform step update
 			x = x-alpha*stochastic_grad
 
-			if(verbose is True):
-				iterationsVal[k] = self.exp.get_value(x)
-				print k, iterationsVal[k]
+
+			
 		
 		if(verbose is True):
 			plt.plot(iterationsVal)

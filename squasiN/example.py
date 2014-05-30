@@ -9,38 +9,46 @@ import scipy as Sci
 import scipy.linalg
 import math
 import random
+from sklearn.linear_model import SGDClassifier
 
 
 #evalutes the objective on a data point, the data is of the form [label, x_1, .., x_p]
 #where p is the number of features 
 def logisticObjective(w, dataSample):
-	continuity_correction = 1e-50
+	continuity_correction = 1e-20
 	label = dataSample[0].item()
 	x = dataSample[1:]
-	z = -numpy.transpose(x)*w
-	if(math.fabs(z) > 600):
+	z = (numpy.transpose(w)*x).item()
+	if(z > 600):
 		z = 600
-	cwx= 1.0/(1.0+math.exp(z))
-	return label*math.log(cwx) + (1.0-label)*math.log(1.0-cwx + continuity_correction)
+	if(z < -600):
+		z = -600
+	sigmoid = 1/(1 + math.exp(-z))
+	return label*math.log(sigmoid + continuity_correction) + (1.0-label)*math.log(1.0 - sigmoid + continuity_correction)
 
 #the logistic gradient of one data vector
+#since we are doing gradient ascent, this is negative
 def logisticGradient(w, dataSample):
 	label = dataSample[0].item()
 	x = dataSample[1:]
-	z = -numpy.transpose(x)*w
-	if(math.fabs(z) > 600):
+	z = (numpy.transpose(w)*x).item()
+	if(z > 600):
 		z = 600
-	cwx= 1.0/(1.0+math.exp(z))
-	return (cwx - label)*(x)
+	if(z < -600):
+		z = -600
+	sigmoid = 1/(1 + math.exp(-z))
+	return-((label-sigmoid))*x
 
 #the logistic hessian vector of one data sample and vector s
 def logisticHessianVec(w,dataSample,s):
 	x = dataSample[1:]
-	z = -numpy.transpose(x)*w
-	if(math.fabs(z) > 600):
+	z = (-numpy.transpose(x)*w).item()
+	if(z > 600):
 		z = 600
-	cwx= 1.0/(1.0+math.exp(z))
-	return cwx*(1-cwx)*(numpy.transpose(x)*s).item()*x
+	if(z < -600):
+		z = -600
+	sigmoid = 1/(1 + math.exp(-z))
+	return sigmoid*(1-sigmoid)*(numpy.transpose(x)*s).item()*x
 
 #Calculates the logistic error of parameter x_opt on the 
 #data set data 
@@ -53,15 +61,21 @@ def logisticError(x_opt,data):
 		x = dataSample[1:]
 		z = numpy.transpose(x)*x_opt
 		#prevent overflow
-		if(math.fabs(z) > 600):
+		if(z > 600):
 			z = 600
+		if(z < -600):
+			z = -600
 		prob = math.exp(z)/(1+ math.exp(z))
 		if(prob > 0.5):
 			pred = 1
 		else:
 			pred = 0
-		if(pred > label):
+		if(pred != label):
 			numWrong+=1 
+		#if(pred == 1):
+		#	print('-----')
+		#if(pred == 0):
+		#	print('o')
 	return (float(numWrong)/float(numSamples))*100
 
 def test_expressions():
@@ -70,36 +84,53 @@ def test_expressions():
 	print(exp.get_value(w))
 	print(exp.get_subgrad(w, 1))
 
+
 def test_problems():
-	#generate synthetic data
-	numFeatures = 100
-	numSamples = 7000
 
-	mean0 = 0
-	mean1 = 10
+	data = numpy.fliplr(numpy.matrix(numpy.loadtxt('spam.data')))
+	numFeatures = data.shape[1] -1
+	numSamples = data.shape[0]
 
-	std0 = 1
-	std1 = 1
 
-	Z0 = numpy.matrix([0 for b in range(1,numSamples/2 + 1)])
-	X0 = numpy.random.normal(loc = mean0, scale = std0, size = (numSamples/2, numFeatures))
-	data0 = numpy.hstack([numpy.transpose(Z0), X0])
-	Z1 = numpy.matrix([1 for b in range(1,numSamples/2 + 1)])
-	X1 = numpy.random.normal(loc = mean1, scale = std1, size = (numSamples/2, numFeatures))
-	data1 = numpy.hstack([numpy.transpose(Z1), X1])
+	#test on skilearn stochastic gradient descent
+	y = numpy.ravel(numpy.array(data[:,0]))
+	X = data
+	X = numpy.array(numpy.delete(X,0,axis = 1))
+	clf = SGDClassifier(loss="log", penalty="l2")
+	clf.fit(X,y)
+	error = sum(y - clf.predict(X))/len(y)
 
-	data = numpy.vstack([data0,data1])
+	p = numpy.transpose(numpy.matrix(clf.coef_))
+	print 'Error of SKILearn SGD is ' +  str(logisticError(p, data) )+ '%'
+
+
+
+	numDesiredSamples = 10000
+	choices = numpy.random.choice(xrange(numSamples), size = numDesiredSamples)
+
+	dataLarge = numpy.zeros((numSamples, numFeatures+1))
+
+	numpy.random.seed(42)
+	for i in xrange(numSamples):
+		choice = choices[i]
+		dataLarge[i,:] = data[choice,:]
+
+	data = numpy.matrix(dataLarge)
+
+
+	
+
 
 	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data, numFeatures)
 	prob = Problem(exp, constraints = [])
-	[optval, x_opt] =  prob.sgsolve(verbose = False, K = 500, gradientBatchSize = 50)
+	[optval, x_opt] =  prob.sgsolve(verbose = False, K = 25, gradientBatchSize = 50)
 	print 'Error of SGD is ' +  str(logisticError(x_opt, data) )+ '%'
-	print optval, x_opt
+	#print optval, x_opt
 
 
-	[optval, x_opt] =  prob.sqnsolve(verbose = False, K = 500, gradientBatchSize = 5, hessianBatchSize = 300)
+	[optval, x_opt] =  prob.sqnsolve(verbose = False, K = 25, gradientBatchSize = 5, hessianBatchSize = 300)
 	print 'Error of SQN is ' +  str(logisticError(x_opt, data) )+ '%'
-	print optval, x_opt
+	#print optval, x_opt
 
 
 
