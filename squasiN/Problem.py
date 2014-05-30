@@ -118,7 +118,7 @@ class Problem():
 
 
 		for k in xrange(K):
-			alpha = 2/(k+1)
+			alpha = 4/(k+1)
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
@@ -128,7 +128,7 @@ class Problem():
 
 			if(verbose is True):
 				iterationsVal[k] = self.exp.get_value(x)
-				print k, iterationsVal[k],numpy.linalg.norm(x), stochastic_grad
+				print k, iterationsVal[k]
 		
 		if(verbose is True):
 			plt.plot(iterationsVal)
