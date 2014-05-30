@@ -21,16 +21,17 @@ def logisticObjective(w, dataSample):
 
 #the logistic gradient of one data vector
 def logisticGradient(w, dataSample):
-	label = dataSample[0]
+	label = dataSample[0].item()
 	x = dataSample[1:]
+	print x.shape,w.shape
 	cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
 	return (cwx - label)*(x)
 
-#the logistic hessian vector of one data sample
-def logisticHessianVec(w,dataSample):
+#the logistic hessian vector of one data sample and vector s
+def logisticHessianVec(w,dataSample,s):
 	x = dataSample[1:]
 	cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
-	return cwx*(1-cwx)*x * numpy.tranpose(x)
+	return cwx*(1-cwx)*(numpy.transpose(x)*s).item()*x
 
 def test_expressions():
 	w = numpy.transpose(numpy.matrix(numpy.random.random((1,numFeatures))))
@@ -42,9 +43,9 @@ def test_problems():
 	#generate data
 	numFeatures = 50
 	numSamples = 5000
-	Z = numpy.asarray([numpy.random.randint(0,1) for b in range(1,numSamples+1)])
+	Z = numpy.matrix([numpy.random.randint(0,1) for b in range(1,numSamples+1)])
 	X = numpy.matrix(numpy.random.random((numSamples,numFeatures)))
-	data = numpy.concatenate(Z,X)
+	data = numpy.hstack([numpy.transpose(Z),X])
 	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data)
 	prob = Problem(exp)
 	print(prob.sgsolve())
