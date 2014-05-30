@@ -15,15 +15,15 @@ import random
 #where p is the number of features 
 def logisticObjective(w, dataSample):
 	continuity_correction = 1e-10
+	label = dataSample[0].item()
 	x = dataSample[1:]
-	cwx= 1.0/(1.0+math.exp(-numpy.transpose(dataSample)*w))
+	cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
 	return label*math.log(cwx) + (1.0-label)*math.log(1.0-cwx + continuity_correction)
 
 #the logistic gradient of one data vector
 def logisticGradient(w, dataSample):
 	label = dataSample[0].item()
 	x = dataSample[1:]
-	print x.shape,w.shape
 	cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
 	return (cwx - label)*(x)
 
@@ -46,7 +46,7 @@ def test_problems():
 	Z = numpy.matrix([numpy.random.randint(0,1) for b in range(1,numSamples+1)])
 	X = numpy.matrix(numpy.random.random((numSamples,numFeatures)))
 	data = numpy.hstack([numpy.transpose(Z),X])
-	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data)
+	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data, numFeatures)
 	prob = Problem(exp)
 	print(prob.sgsolve())
 	print(prob.sqnsolve())

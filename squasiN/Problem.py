@@ -22,11 +22,11 @@ class Problem():
 		continuity_correction = 1e-10
 	
 		if x_0 is None:
-			x_0 =  numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.numFeatures))))
+			x_0 =  numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 		x = x_0
 		#average iterates
 		x_av_j = x
-		x_av_i = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.numFeatures))))
+		x_av_i = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 
 
 		#initialize curvature pairs 
@@ -37,8 +37,8 @@ class Problem():
 		#LFBGS parameters
 		rho = numpy.ones((M,1))
 		alp = numpy.ones((M,1))
-		savedS = numpy.matrix(numpy.zeros((self.exp.numFeatures, M)))
-		savedY = numpy.matrix(numpy.zeros((self.exp.numFeatures, M)))
+		savedS = numpy.matrix(numpy.zeros((self.exp.paramSize, M)))
+		savedY = numpy.matrix(numpy.zeros((self.exp.paramSize, M)))
 		last = 0
 
 		t = 0 #number of times the hessian has been updated
@@ -79,9 +79,9 @@ class Problem():
 				x_av_i = x_av_i/L
 				#compute new curvature pairs 
 				s_t = x_av_i - x_av_j
-				y_t = s_t* self.exp.get_hesVec(x_av_i,hessianBatchSize)
+				y_t = self.exp.get_hesVec(x_av_i,hessianBatchSize, s_t)
 				x_av_j = x_av_i
-				x_av_i = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.numFeatures))))
+				x_av_i = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 				#save theta so we don't compute it multiple times
 				ys = numpy.transpose(s_t)*y_t + continuity_correction
 				theta = (ys/(( numpy.transpose(y_t)*y_t + continuity_correction))).item()
@@ -96,7 +96,7 @@ class Problem():
 
 	#basic non-robust implementation of stochastic gradient descent
 	def sgsolve(self, K = 1000, gradientBatchSize = 10):
-		x = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.numFeatures))))
+		x = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.paramSize))))
 
 		for k in xrange(K):
 			alpha = 1/(k+1)
