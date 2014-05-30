@@ -11,21 +11,26 @@ import math
 import random
 
 
-#evalutes the objective on a data point with vector label 
-def logisticObjective(w, dataSample, label):
+#evalutes the objective on a data point, the data is of the form [label, x_1, .., x_p]
+#where p is the number of features 
+def logisticObjective(w, dataSample):
 	continuity_correction = 1e-10
+	x = dataSample[1:]
 	cwx= 1.0/(1.0+math.exp(-numpy.transpose(dataSample)*w))
 	return label*math.log(cwx) + (1.0-label)*math.log(1.0-cwx + continuity_correction)
 
-	#the logistic gradient of one data vector
-def logisticGradient(w, dataSample, label):
-	cwx= 1.0/(1.0+math.exp(-numpy.transpose(dataSample)*w))
-	return (cwx - label)*(dataSample)
+#the logistic gradient of one data vector
+def logisticGradient(w, dataSample):
+	label = dataSample[0]
+	x = dataSample[1:]
+	cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
+	return (cwx - label)*(x)
 
-	#the logistic hessian vector of one data sample
-def logisticHessianVec(w,s,dataSample):
-	cwx= 1.0/(1.0+math.exp(-numpy.transpose(dataSample)*w))
-	return cwx*(1-cwx)*(numpy.transpose(dataSample)*s).item()*dataSample
+#the logistic hessian vector of one data sample
+def logisticHessianVec(w,dataSample):
+	x = dataSample[1:]
+	cwx= 1.0/(1.0+math.exp(-numpy.transpose(x)*w))
+	return cwx*(1-cwx)*x * numpy.tranpose(x)
 
 def test_expressions():
 	w = numpy.transpose(numpy.matrix(numpy.random.random((1,numFeatures))))
@@ -39,7 +44,8 @@ def test_problems():
 	numSamples = 5000
 	Z = numpy.asarray([numpy.random.randint(0,1) for b in range(1,numSamples+1)])
 	X = numpy.matrix(numpy.random.random((numSamples,numFeatures)))
-	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, X, Z)
+	data = numpy.concatenate(Z,X)
+	exp = Expression(logisticObjective,logisticGradient, logisticHessianVec, data)
 	prob = Problem(exp)
 	print(prob.sgsolve())
 	print(prob.sqnsolve())

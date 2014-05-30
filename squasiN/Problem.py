@@ -37,8 +37,8 @@ class Problem():
 		#LFBGS parameters
 		rho = numpy.ones((M,1))
 		alp = numpy.ones((M,1))
-		delW = numpy.matrix(numpy.zeros((self.exp.numFeatures, M)))
-		delG = numpy.matrix(numpy.zeros((self.exp.numFeatures, M)))
+		savedS = numpy.matrix(numpy.zeros((self.exp.numFeatures, M)))
+		savedY = numpy.matrix(numpy.zeros((self.exp.numFeatures, M)))
 		last = 0
 
 		t = 0 #number of times the hessian has been updated
@@ -62,14 +62,14 @@ class Problem():
 				index = last
 				for i in xrange(min(M,t)):
 					alp[index] = rho[index]
-					stepDirection = stepDirection - alp[index].item()*delG[:,index]
+					stepDirection = stepDirection - alp[index].item()*savedY[:,index]
 					index = M - ((-index + 1) % M)
 				stepDirection = theta*stepDirection
 				for i in xrange(min(M,t)):
 					index = index%M
-					b = rho[index]*numpy.transpose(delG[:,index])*stepDirection
+					b = rho[index]*numpy.transpose(savedY[:,index])*stepDirection
 					b = b.item()
-					stepDirection = stepDirection + (alp[index].item() - b)*delW[:,index]
+					stepDirection = stepDirection + (alp[index].item() - b)*savedS[:,index]
 
 				#update x with the step direction 
 				x = x - alpha*stepDirection
@@ -79,7 +79,7 @@ class Problem():
 				x_av_i = x_av_i/L
 				#compute new curvature pairs 
 				s_t = x_av_i - x_av_j
-				y_t = self.exp.get_hesVec(x_av_i, s_t, hessianBatchSize)
+				y_t = s_t* self.exp.get_hesVec(x_av_i,hessianBatchSize)
 				x_av_j = x_av_i
 				x_av_i = numpy.transpose(numpy.matrix(numpy.zeros((1,self.exp.numFeatures))))
 				#save theta so we don't compute it multiple times
@@ -87,10 +87,9 @@ class Problem():
 				theta = (ys/(( numpy.transpose(y_t)*y_t + continuity_correction))).item()
 				if M > 0:
 					last = last%M
-					delW[:,last] = s_t
-					delG[:,last] = y_t
+					savedS[:,last] = s_t
+					savedY[:,last] = y_t
 					rho[last] = 1/ys
-
 
 		return (self.exp.get_value(x), x)
 
