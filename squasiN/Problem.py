@@ -2,6 +2,8 @@ import numpy
 import scipy 
 import matplotlib.pyplot as plt
 import time
+import math
+
 #solves a given expression using stochastic quasi-newton 
 class Problem():
 	
@@ -18,9 +20,10 @@ class Problem():
 	#	L : compute correction pairs every L iterations
 	#	K : number of iterations
 	#	alpha : just use beta/niter for now can be a stepsize sequence  
+	#	Z: Frequency at which we increase L
 	#Outputs: final weights and optimum value 
 
-	def sqnsolve(self, x_0 =None, M = 10, L = 20, K = 1000, alpha = None, gradientBatchSize = 5, hessianBatchSize = 300, verbose = False):
+	def sqnsolve(self, x_0 =None, M = 10, L = 30, K = 1000, alpha = None, gradientBatchSize = 5, hessianBatchSize = 300, verbose = False, Z =50):
 		continuity_correction = 1e-10
 	
 		iterationsVal = numpy.zeros(K)
@@ -47,14 +50,23 @@ class Problem():
 		last = 0
 
 		t = 0 #number of times the hessian has been updated
+		prev = -999
+		curr = 999
+		numSame = 0
 
 		for k in xrange(K):
-			alpha = 0.01/(k+1)
+			alpha = 0.2/math.sqrt((k+1))
 
 
 			if(verbose is True):
-				iterationsVal[k] = self.exp.get_value(x)
-				print k, iterationsVal[k]
+				prev = curr
+				curr = self.exp.get_value(x)
+				iterationsVal[k] = curr
+				#print k, curr
+				if(math.fabs(prev - curr) < 1e-20):
+					numSame+=1
+				if(numSame > 50):
+					break
 
 
 			start = time.clock()
@@ -66,31 +78,31 @@ class Problem():
 			x_av_i = x_av_i + x
 
 			if k < 2*L:
-				#print 'SGD ITERATION!'
 				#stochastic gradient iteration 
 				x = x - alpha*stochastic_grad
 			else:
-				#print 'SQN ITERATION!'
 				#L-BFGS step computation with memory M 
-				stepDirection = stochastic_grad
+				stepDirection = -stochastic_grad
 				#compute uphill direction as follows
-				index = last
+				index = last%M
 				for i in xrange(min(M,t)):
-					alp[index] = rho[index]
+					alp[index] = rho[index]*numpy.transpose(savedS[:,index])*stepDirection
 					stepDirection = stepDirection - alp[index].item()*savedY[:,index]
-					index = M - ((-index + 1) % M)
+					index = M - ((-index+1) % M) -1
+
 				stepDirection = theta*stepDirection
+
 				for i in xrange(min(M,t)):
-					index = index%M
+					index = (index+1)%M
 					b = rho[index]*numpy.transpose(savedY[:,index])*stepDirection
 					b = b.item()
 					stepDirection = stepDirection + (alp[index].item() - b)*savedS[:,index]
 
 				#update x with the step direction 
-				x = x - alpha*stepDirection
+				x = x + alpha*stepDirection
+
 
 			if k%L == 0:
-				#print 'Hessian being updated',t				
 				t = t +1
 				x_av_i = x_av_i/L
 				#compute new curvature pairs 
@@ -101,27 +113,37 @@ class Problem():
 				#save theta so we don't compute it multiple times
 				ys = numpy.transpose(s_t)*y_t + continuity_correction
 				theta = (ys/(( numpy.transpose(y_t)*y_t + continuity_correction))).item()
+				last +=1
 				if M > 0:
 					last = last%M
 					savedS[:,last] = s_t
 					savedY[:,last] = y_t
-					rho[last] = 1/ys
+					rho[last] = float(1)/ys
 			end = time.clock() 
+			if(k%Z == 0):
+				L+=1
 			averageTime+= end - start
 
 		averageTime/=K
 
 		if(verbose is True):
-			plt.plot(iterationsVal, label = "Stochastic Quasi-Newton, L = " + str(L))
+			plt.plot(iterationsVal[1:k], label = "Stochastic Quasi-Newton")
 			plt.xlabel('Iterations')
 			plt.ylabel('Objective Value')
 			plt.legend(loc='lower right')
-			if(L == 85):
-				plt.show()
-			print averageTime
+			#plt.show()
+			fig = plt.figure(1)
+			# We define a fake subplot that is in fact only the plot.  
+			plot = fig.add_subplot(111)
+			# We change the fontsize of minor ticks label 
+			plot.tick_params(axis='both', which='major', labelsize=14)
+			plot.tick_params(axis='both', which='minor', labelsize=12)
+			print ('Total number of times Hessian was updated: ', t)
+			print 'We converged in ', k+1, ' iterations'
+			print 'The average iteration took ', averageTime, ' seconds'
+			#print iterationsVal
 
-
-		return (self.exp.get_value(x), x)
+		return (self.exp.get_value(x), x, averageTime)
 
 
 	#basic non-robust implementation of stochastic gradient descent
@@ -130,17 +152,25 @@ class Problem():
 
 		iterationsVal = numpy.zeros(K)
 		averageTime = 0
-
+		prev = -999
+		curr = 999
+		numSame = 0
 
 		for k in xrange(K):	
 
 			if(verbose is True):
-				iterationsVal[k] = self.exp.get_value(x)
-				print k, iterationsVal[k]
+				prev = curr
+				curr = self.exp.get_value(x)
+				iterationsVal[k] = curr
+				#print k, curr
+				if(math.fabs(prev - curr) < 1e-20):
+					numSame+=1
+				if(numSame > 50):
+					break
 
 
 			start = time.clock()
-			alpha = 0.01/(k+1)
+			alpha = 0.1/math.sqrt((k+1))
 
 			#Calculate stochastic gradient
 			stochastic_grad = self.exp.get_subgrad(x, gradientBatchSize)
@@ -157,14 +187,16 @@ class Problem():
 			
 		
 		if(verbose is True):
+
 			plt.plot(iterationsVal, label = "Stochastic Gradient Descent")
 			plt.xlabel('Iterations')
 			plt.ylabel('Objective Value')
-			print(averageTime)
+			print 'The average iteration took ', averageTime, ' seconds'
+			print 'We converged in ', k+1, ' iterations'
 			#plt.show()
 
 
-		return (self.exp.get_value(x), x)
+		return (self.exp.get_value(x), x, averageTime)
 
 
 
